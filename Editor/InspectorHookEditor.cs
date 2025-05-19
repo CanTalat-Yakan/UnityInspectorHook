@@ -30,6 +30,7 @@ namespace UnityEssentials
             if (InspectorHook.IsPropertyHandled(property.propertyPath))
                 return;
 
+            EditorGUI.indentLevel = property.depth;
             bool isExpanded = EditorGUILayout.PropertyField(property, false);
             InspectorHook.MarkPropertyAsHandled(property.propertyPath);
         }

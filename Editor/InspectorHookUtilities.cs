@@ -61,7 +61,7 @@ namespace UnityEssentials
         {
             var field = GetSerializedFieldInfo(property);
             attributes = field?.GetCustomAttributes(typeof(T), true).Cast<T>().ToArray() ?? default;
-            return attributes.Length > 0;
+            return attributes?.Length > 0;
         }
 
         public static bool TryGetAttribute<T>(SerializedProperty property, out T attribute) where T : class
