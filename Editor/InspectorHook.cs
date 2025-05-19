@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using static PlasticGui.LaunchDiffParameters;
 
 namespace UnityEssentials
 {
@@ -103,21 +104,45 @@ namespace UnityEssentials
             iterator.NextVisible(true); // Skip script field
 
             while (iterator.NextVisible(false))
-            {
-                InspectorHook.InvokeProcessProperties(iterator.Copy());
+                ProcessProperty(iterator.Copy());
 
-                if (!InspectorHook.IsPropertyHandled(iterator.propertyPath))
-                {
-                    EditorGUILayout.PropertyField(iterator, false);
-                    InspectorHook.MarkPropertyAsHandled(iterator.propertyPath);
-                }
-            }
-
-            var methods = target.GetType().GetMethods();
-            foreach (var method in methods)
+            foreach (var method in target.GetType().GetMethods())
                 InspectorHook.InvokeProcessMethod(method);
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private void ProcessProperty(SerializedProperty property)
+        {
+            if (InspectorHook.IsPropertyHandled(property.propertyPath))
+                return;
+
+            InspectorHook.InvokeProcessProperties(property);
+
+            if (InspectorHook.IsPropertyHandled(property.propertyPath))
+                return;
+
+            // Draw the property and handle children recursively
+            bool isExpanded = EditorGUILayout.PropertyField(property, false);
+            InspectorHook.MarkPropertyAsHandled(property.propertyPath);
+
+            // Process children if expanded and has children
+            if (isExpanded && property.hasChildren)
+            {
+                SerializedProperty child = property.Copy();
+                child.NextVisible(true); // Enter the first child
+
+                int parentDepth = property.depth;
+                EditorGUI.indentLevel++;
+
+                while (child.depth > parentDepth)
+                {
+                    ProcessProperty(child.Copy());
+                    if (!child.NextVisible(false)) break;
+                }
+
+                EditorGUI.indentLevel--;
+            }
         }
     }
 }
