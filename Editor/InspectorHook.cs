@@ -5,42 +5,67 @@ using UnityEngine;
 
 namespace UnityEssentials
 {
-    public struct HookEntry
+    public struct HookInitializeEntry
     {
         public Action Hook;
         public int Priority;
     }
 
+    public struct HookProcessEntry
+    {
+        public Action<SerializedProperty> Hook;
+        public int Priority;
+    }
+
     public static class InspectorHook
     {
-        private static List<HookEntry> s_onInspectorGUICallbacks = new();
+        private static List<HookInitializeEntry> s_onInitialization= new();
+        private static List<HookProcessEntry> s_onProcessProperty = new();
+        private static HashSet<string> s_handledProperties = new();
 
         public static MonoBehaviour Target { get; private set; }
         public static SerializedObject SerializedObject { get; private set; }
 
-        public static void Add(Action hook, int priority = 0)
+        public static void MarkPropertyAsHandled(string propertyPath) =>
+            s_handledProperties.Add(propertyPath);
+
+        public static bool IsPropertyHandled(string propertyPath) =>
+            s_handledProperties.Contains(propertyPath);
+
+        public static void ResetHandledProperties() =>
+            s_handledProperties.Clear();
+
+        public static void AddInitialization(Action hook, int priority = 0)
         {
-            s_onInspectorGUICallbacks.Add(new HookEntry { Hook = hook, Priority = priority });
-            s_onInspectorGUICallbacks.Sort((a, b) => b.Priority.CompareTo(a.Priority));
+            s_onInitialization.Add(new() { Hook = hook, Priority = priority });
+            s_onInitialization.Sort((a, b) => b.Priority.CompareTo(a.Priority));
+        }
+        
+        public static void AddProcessProperty(Action<SerializedProperty> hook, int priority = 0)
+        {
+            s_onProcessProperty.Add(new() { Hook = hook, Priority = priority });
+            s_onProcessProperty.Sort((a, b) => b.Priority.CompareTo(a.Priority));
         }
 
-        public static void Remove(Action hook)
+        public static void InvokeInitialization(Editor editor)
         {
-            // Remove all entries with matching hook delegate
-            for (int i = s_onInspectorGUICallbacks.Count - 1; i >= 0; i--)
-                if (s_onInspectorGUICallbacks[i].Hook == hook)
-                    s_onInspectorGUICallbacks.RemoveAt(i);
-        }
-
-        public static void InvokeHooks(Editor editor)
-        {
-            Debug.Log(s_onInspectorGUICallbacks.Count + " Count Hooks");
-
             SerializedObject = editor.serializedObject;
             Target = editor.target as MonoBehaviour;
 
-            foreach (var entry in s_onInspectorGUICallbacks)
+            foreach (var entry in s_onInitialization)
                 entry.Hook();
+        }
+
+        public static void InvokeProcessProperties(SerializedProperty serializedProperty)
+        {
+            foreach (var entry in s_onProcessProperty)
+                entry.Hook(serializedProperty);
+        }
+
+        public static void DrawProperty(SerializedProperty property, bool includeChildren = false)
+        {
+            EditorGUILayout.PropertyField(property, includeChildren);
+            MarkPropertyAsHandled(property.propertyPath);
         }
     }
 
@@ -49,9 +74,26 @@ namespace UnityEssentials
     {
         public override void OnInspectorGUI()
         {
-            //DrawDefaultInspector();
+            serializedObject.Update();
 
-            InspectorHook.InvokeHooks(this);
+            InspectorHook.ResetHandledProperties();
+            InspectorHook.InvokeInitialization(this);
+
+            SerializedProperty iterator = serializedObject.GetIterator();
+            iterator.NextVisible(true); // Skip script field
+
+            while (iterator.NextVisible(false))
+            {
+                InspectorHook.InvokeProcessProperties(iterator.Copy());
+
+                if (!InspectorHook.IsPropertyHandled(iterator.propertyPath))
+                {
+                    EditorGUILayout.PropertyField(iterator, false);
+                    InspectorHook.MarkPropertyAsHandled(iterator.propertyPath);
+                }
+            }
+
+            serializedObject.ApplyModifiedProperties();
         }
     }
 }
