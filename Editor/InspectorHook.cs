@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
@@ -11,16 +12,23 @@ namespace UnityEssentials
         public int Priority;
     }
 
-    public struct HookProcessEntry
+    public struct HookProcessPropertyEntry
     {
         public Action<SerializedProperty> Hook;
+        public int Priority;
+    }
+    
+    public struct HookProcessMethodEntry
+    {
+        public Action<MethodInfo> Hook;
         public int Priority;
     }
 
     public static class InspectorHook
     {
         private static List<HookInitializeEntry> s_onInitialization= new();
-        private static List<HookProcessEntry> s_onProcessProperty = new();
+        private static List<HookProcessPropertyEntry> s_onProcessProperty = new();
+        private static List<HookProcessMethodEntry> s_onProcessMethod = new();
         private static HashSet<string> s_handledProperties = new();
 
         public static MonoBehaviour Target { get; private set; }
@@ -46,6 +54,12 @@ namespace UnityEssentials
             s_onProcessProperty.Add(new() { Hook = hook, Priority = priority });
             s_onProcessProperty.Sort((a, b) => b.Priority.CompareTo(a.Priority));
         }
+        
+        public static void AddProcessMethod(Action<MethodInfo> hook, int priority = 0)
+        {
+            s_onProcessMethod.Add(new() { Hook = hook, Priority = priority });
+            s_onProcessMethod.Sort((a, b) => b.Priority.CompareTo(a.Priority));
+        }
 
         public static void InvokeInitialization(Editor editor)
         {
@@ -60,6 +74,12 @@ namespace UnityEssentials
         {
             foreach (var entry in s_onProcessProperty)
                 entry.Hook(serializedProperty);
+        }
+
+        public static void InvokeProcessMethod(MethodInfo methodInfo)
+        {
+            foreach (var entry in s_onProcessMethod)
+                entry.Hook(methodInfo);
         }
 
         public static void DrawProperty(SerializedProperty property, bool includeChildren = false)
@@ -92,6 +112,10 @@ namespace UnityEssentials
                     InspectorHook.MarkPropertyAsHandled(iterator.propertyPath);
                 }
             }
+
+            var methods = target.GetType().GetMethods();
+            foreach (var method in methods)
+                InspectorHook.InvokeProcessMethod(method);
 
             serializedObject.ApplyModifiedProperties();
         }
