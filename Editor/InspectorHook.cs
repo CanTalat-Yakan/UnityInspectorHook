@@ -1,9 +1,9 @@
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
-using static PlasticGui.LaunchDiffParameters;
 
 namespace UnityEssentials
 {
@@ -89,60 +89,5 @@ namespace UnityEssentials
             MarkPropertyAsHandled(property.propertyPath);
         }
     }
-
-    [CustomEditor(typeof(MonoBehaviour), true)]
-    public class InspectorHookEditor : Editor
-    {
-        public override void OnInspectorGUI()
-        {
-            serializedObject.Update();
-
-            InspectorHook.ResetHandledProperties();
-            InspectorHook.InvokeInitialization(this);
-
-            SerializedProperty iterator = serializedObject.GetIterator();
-            iterator.NextVisible(true); // Skip script field
-
-            while (iterator.NextVisible(false))
-                ProcessProperty(iterator.Copy());
-
-            foreach (var method in target.GetType().GetMethods())
-                InspectorHook.InvokeProcessMethod(method);
-
-            serializedObject.ApplyModifiedProperties();
-        }
-
-        private void ProcessProperty(SerializedProperty property)
-        {
-            if (InspectorHook.IsPropertyHandled(property.propertyPath))
-                return;
-
-            InspectorHook.InvokeProcessProperties(property);
-
-            if (InspectorHook.IsPropertyHandled(property.propertyPath))
-                return;
-
-            // Draw the property and handle children recursively
-            bool isExpanded = EditorGUILayout.PropertyField(property, false);
-            InspectorHook.MarkPropertyAsHandled(property.propertyPath);
-
-            // Process children if expanded and has children
-            if (isExpanded && property.hasChildren)
-            {
-                SerializedProperty child = property.Copy();
-                child.NextVisible(true); // Enter the first child
-
-                int parentDepth = property.depth;
-                EditorGUI.indentLevel++;
-
-                while (child.depth > parentDepth)
-                {
-                    ProcessProperty(child.Copy());
-                    if (!child.NextVisible(false)) break;
-                }
-
-                EditorGUI.indentLevel--;
-            }
-        }
-    }
 }
+#endif
