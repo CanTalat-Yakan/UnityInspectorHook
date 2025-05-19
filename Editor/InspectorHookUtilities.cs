@@ -25,7 +25,7 @@ namespace UnityEssentials
                 Iterate(iterator, onProcessProperty);
         }
 
-        private static void Iterate(SerializedProperty property, Action<SerializedProperty> onProcessProperty)
+        public static void Iterate(SerializedProperty property, Action<SerializedProperty> onProcessProperty)
         {
             var current = property.Copy();
             var parentDepth = current.depth;
@@ -51,6 +51,26 @@ namespace UnityEssentials
             while (current.NextVisible(false) && current.depth >= parentDepth);
         }
 
+        public static bool IsGenericPropertyWithChildren(SerializedProperty property)
+        {
+            if (property == null)
+                return false;
+
+            return property.propertyType == SerializedPropertyType.Generic
+                && property.hasVisibleChildren
+                && !property.type.StartsWith("PPtr<"); // Avoid UnityEngine.Object refs
+        }
+        
+        public static bool IsDictionary(SerializedProperty property)
+        {
+            if (property == null)
+                return false;
+
+            return property.propertyType == SerializedPropertyType.Generic
+                && property.hasVisibleChildren
+                && !property.type.StartsWith("PPtr<"); // Avoid UnityEngine.Object refs
+        }
+
         public static string GetToolTip(SerializedProperty property)
         {
             TryGetAttribute<TooltipAttribute>(property, out var tooltip);
@@ -69,6 +89,18 @@ namespace UnityEssentials
             attribute = null;
             var field = GetSerializedFieldInfo(property);
             return (attribute = field?.GetCustomAttributes(typeof(T), true).FirstOrDefault() as T) != null;
+        }
+        
+        public static bool TryGetAttributes<T>(MethodInfo method, out T[] attributes) where T : class
+        {
+            attributes = method?.GetCustomAttributes(typeof(T), true).Cast<T>().ToArray() ?? default;
+            return attributes?.Length > 0;
+        }
+
+        public static bool TryGetAttribute<T>(MethodInfo method, out T attribute) where T : class
+        {
+            attribute = null;
+            return (attribute = method?.GetCustomAttributes(typeof(T), true).FirstOrDefault() as T) != null;
         }
 
         public static FieldInfo GetSerializedFieldInfo(SerializedProperty property)

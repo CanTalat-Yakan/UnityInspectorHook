@@ -7,19 +7,19 @@ using UnityEngine;
 
 namespace UnityEssentials
 {
-    public struct HookInitializeEntry
+    public struct HookEntry
     {
         public Action Hook;
         public int Priority;
     }
 
-    public struct HookProcessPropertyEntry
+    public struct HookPropertyEntry
     {
         public Action<SerializedProperty> Hook;
         public int Priority;
     }
     
-    public struct HookProcessMethodEntry
+    public struct HookMethodEntry
     {
         public Action<MethodInfo> Hook;
         public int Priority;
@@ -27,9 +27,11 @@ namespace UnityEssentials
 
     public static class InspectorHook
     {
-        private static List<HookInitializeEntry> s_onInitialization= new();
-        private static List<HookProcessPropertyEntry> s_onProcessProperty = new();
-        private static List<HookProcessMethodEntry> s_onProcessMethod = new();
+        private static List<HookEntry> s_onInitialization= new();
+        private static List<HookPropertyEntry> s_onProcessProperty = new();
+        private static List<HookMethodEntry> s_onProcessMethod = new();
+        private static List<HookEntry> s_onPostProcess = new();
+
         private static HashSet<string> s_handledProperties = new();
 
         public static MonoBehaviour Target { get; private set; }
@@ -61,6 +63,12 @@ namespace UnityEssentials
             s_onProcessMethod.Add(new() { Hook = hook, Priority = priority });
             s_onProcessMethod.Sort((a, b) => b.Priority.CompareTo(a.Priority));
         }
+        
+        public static void AddPostProcess(Action hook, int priority = 0)
+        {
+            s_onPostProcess.Add(new() { Hook = hook, Priority = priority });
+            s_onPostProcess.Sort((a, b) => b.Priority.CompareTo(a.Priority));
+        }
 
         public static void InvokeInitialization(Editor editor)
         {
@@ -82,10 +90,40 @@ namespace UnityEssentials
             foreach (var entry in s_onProcessMethod)
                 entry.Hook(methodInfo);
         }
+        
+        public static void InvokePostProcess()
+        {
+            foreach (var entry in s_onPostProcess)
+                entry.Hook();
+        }
+
+        public static void GetAllProperties(out List<SerializedProperty> serializedProperties)
+        {
+            serializedProperties = new();
+            InspectorHookUtilities.IterateProperties(serializedProperties.Add);
+        }
+
+        public static void GetAllMethods(out List<MethodInfo> methodInfos)
+        {
+            methodInfos = new();
+            InspectorHookUtilities.IterateMethods(methodInfos.Add);
+        }
 
         public static void DrawProperty(SerializedProperty property, bool includeChildren = false)
         {
             EditorGUILayout.PropertyField(property, includeChildren);
+            MarkPropertyAsHandled(property.propertyPath);
+        }
+
+        public static void DrawProperty(Rect rect, SerializedProperty property, bool includeChildren = false)
+        {
+            EditorGUI.PropertyField(rect, property, includeChildren);
+            MarkPropertyAsHandled(property.propertyPath);
+        }
+
+        public static void DrawProperty(Rect rect, SerializedProperty property, GUIContent label, bool includeChildren = false)
+        {
+            EditorGUI.PropertyField(rect, property, label, includeChildren);
             MarkPropertyAsHandled(property.propertyPath);
         }
     }

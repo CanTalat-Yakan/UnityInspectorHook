@@ -10,14 +10,20 @@ namespace UnityEssentials
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
+            EditorGUI.BeginChangeCheck();
 
             InspectorHook.ResetHandledProperties();
+
             InspectorHook.InvokeInitialization(this);
 
             InspectorHookUtilities.IterateProperties(ProcessProperty);
             InspectorHookUtilities.IterateMethods(InspectorHook.InvokeProcessMethod);
 
-            serializedObject.ApplyModifiedProperties();
+            if (EditorGUI.EndChangeCheck())
+            {
+                serializedObject.ApplyModifiedProperties();
+                InspectorHook.InvokePostProcess();
+            }
         }
 
         private void ProcessProperty(SerializedProperty property)
