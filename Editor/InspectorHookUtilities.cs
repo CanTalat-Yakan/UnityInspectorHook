@@ -51,6 +51,12 @@ namespace UnityEssentials
             while (current.NextVisible(false) && current.depth >= parentDepth);
         }
 
+        public static string GetTooltip(SerializedProperty property)
+        {
+            TryGetAttribute<TooltipAttribute>(property, out var tooltip);
+            return tooltip?.tooltip ?? ObjectNames.NicifyVariableName(property.name);
+        }
+
         public static bool TryGetAttributes<T>(SerializedProperty property, out T[] attributes) where T : class
         {
             var field = GetSerializedFieldInfo(property);
