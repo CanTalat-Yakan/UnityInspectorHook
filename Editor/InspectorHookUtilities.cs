@@ -1,11 +1,11 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
-using static Codice.CM.Common.CmCallContext;
 
 namespace UnityEssentials
 {
@@ -38,9 +38,11 @@ namespace UnityEssentials
                 bool isExpanded = current.isExpanded;
                 bool hasChildren = current.hasVisibleChildren;
                 bool isArray = current.isArray;
-                bool isCollection = IsPropertyACollection(property);
+                Type fieldType = GetSerializedFieldInfo(current)?.FieldType;
+                bool isCollection = IsCollection(fieldType);
+                bool isDictionary = IsDictionary(fieldType);
 
-                if (isExpanded && hasChildren && !isArray && !isCollection)
+                if (isExpanded && hasChildren && !isArray && !isCollection && !isDictionary)
                 {
                     var child = current.Copy();
                     if (child.NextVisible(true) && child.depth > parentDepth)
@@ -54,17 +56,24 @@ namespace UnityEssentials
             while (current.NextVisible(false) && current.depth >= parentDepth);
         }
 
-        public static bool IsPropertyACollection(SerializedProperty property)
+        public static bool IsCollection(Type fieldType)
         {
-            var fieldInfo = GetSerializedFieldInfo(property);
-            if (fieldInfo == null)
+            if (fieldType == null)
                 return false;
 
-            var fieldType = fieldInfo.FieldType;
             return fieldType.IsArray || (fieldType.IsGenericType && fieldType.GetGenericTypeDefinition() == typeof(List<>));
         }
 
-        public static bool IsPropertyAnArrayElement(SerializedProperty property)
+        public static bool IsDictionary(Type fieldType)
+        {
+            if (fieldType == null)
+                return false;
+
+            return typeof(IDictionary).IsAssignableFrom(fieldType) ||
+                                fieldType.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+        }
+
+        public static bool IsArrayElement(SerializedProperty property)
         {
             string path = property.propertyPath;
 
@@ -76,17 +85,7 @@ namespace UnityEssentials
             return property.serializedObject.FindProperty(propertyName).isArray;
         }
 
-        public static bool IsGenericPropertyWithChildren(SerializedProperty property)
-        {
-            if (property == null)
-                return false;
-
-            return property.propertyType == SerializedPropertyType.Generic
-                && property.hasVisibleChildren
-                && !property.type.StartsWith("PPtr<"); // Avoid UnityEngine.Object refs
-        }
-
-        public static bool IsDictionary(SerializedProperty property)
+        public static bool IsGenericWithChildren(SerializedProperty property)
         {
             if (property == null)
                 return false;
