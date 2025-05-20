@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using static Codice.CM.Common.CmCallContext;
 
 namespace UnityEssentials
 {
@@ -36,8 +37,10 @@ namespace UnityEssentials
 
                 bool isExpanded = current.isExpanded;
                 bool hasChildren = current.hasVisibleChildren;
+                bool isArray = current.isArray;
+                bool isCollection = IsPropertyACollection(property);
 
-                if (isExpanded && hasChildren)
+                if (isExpanded && hasChildren && !isArray && !isCollection)
                 {
                     var child = current.Copy();
                     if (child.NextVisible(true) && child.depth > parentDepth)
@@ -51,6 +54,28 @@ namespace UnityEssentials
             while (current.NextVisible(false) && current.depth >= parentDepth);
         }
 
+        public static bool IsPropertyACollection(SerializedProperty property)
+        {
+            var fieldInfo = GetSerializedFieldInfo(property);
+            if (fieldInfo == null)
+                return false;
+
+            var fieldType = fieldInfo.FieldType;
+            return fieldType.IsArray || (fieldType.IsGenericType && fieldType.GetGenericTypeDefinition() == typeof(List<>));
+        }
+
+        public static bool IsPropertyAnArrayElement(SerializedProperty property)
+        {
+            string path = property.propertyPath;
+
+            int dotIndex = path.IndexOf('.');
+            if (dotIndex == -1)
+                return false;
+
+            string propertyName = path.Substring(0, dotIndex);
+            return property.serializedObject.FindProperty(propertyName).isArray;
+        }
+
         public static bool IsGenericPropertyWithChildren(SerializedProperty property)
         {
             if (property == null)
@@ -60,7 +85,7 @@ namespace UnityEssentials
                 && property.hasVisibleChildren
                 && !property.type.StartsWith("PPtr<"); // Avoid UnityEngine.Object refs
         }
-        
+
         public static bool IsDictionary(SerializedProperty property)
         {
             if (property == null)
@@ -90,7 +115,7 @@ namespace UnityEssentials
             var field = GetSerializedFieldInfo(property);
             return (attribute = field?.GetCustomAttributes(typeof(T), true).FirstOrDefault() as T) != null;
         }
-        
+
         public static bool TryGetAttributes<T>(MethodInfo method, out T[] attributes) where T : class
         {
             attributes = method?.GetCustomAttributes(typeof(T), true).Cast<T>().ToArray() ?? default;
@@ -122,13 +147,13 @@ namespace UnityEssentials
                     fieldInfo = typeToCheck.GetField(segment,
                         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
-                    if (fieldInfo != null) 
+                    if (fieldInfo != null)
                         break;
 
                     typeToCheck = typeToCheck.BaseType;
                 }
 
-                if (fieldInfo == null) 
+                if (fieldInfo == null)
                     return null;
 
                 // 2. Handle Unity serialization special cases
