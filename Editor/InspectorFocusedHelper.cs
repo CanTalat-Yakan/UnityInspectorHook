@@ -6,7 +6,7 @@ namespace UnityEssentials
 {
     public static class InspectorFocusedHelper
     {
-        public static bool ProcessKeyboardClick(Rect position)
+        public static bool ProcessKeyboardClick(Rect position, bool drawOutline = true)
         {
             var controlId = GetControlId(position);
             var isControlFocused = GUIUtility.keyboardControl == controlId;
@@ -17,7 +17,7 @@ namespace UnityEssentials
                 return true;
             }
 
-            if (isControlFocused)
+            if (isControlFocused && drawOutline)
                 GUI.DrawTexture(position, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0, new Color(0.25f, 0.5f, 1f, 1f), 1, 1);
 
             return false;
