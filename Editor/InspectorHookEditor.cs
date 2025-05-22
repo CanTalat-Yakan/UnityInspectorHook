@@ -37,8 +37,8 @@ namespace UnityEssentials
                 return;
 
             EditorGUI.indentLevel = property.depth;
-            bool isExpanded = EditorGUILayout.PropertyField(property, false);
-            InspectorHook.MarkPropertyAsHandled(property.propertyPath);
+
+            InspectorHook.DrawProperty(property, false);
         }
     }
 }

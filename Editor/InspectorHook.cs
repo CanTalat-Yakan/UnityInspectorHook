@@ -109,22 +109,25 @@ namespace UnityEssentials
             InspectorHookUtilities.IterateMethods(methodInfos.Add);
         }
 
-        public static void DrawProperty(SerializedProperty property, bool includeChildren = false)
+        public static bool DrawProperty(SerializedProperty property, bool includeChildren = false)
         {
-            EditorGUILayout.PropertyField(property, includeChildren);
+            var isExpanded = EditorGUILayout.PropertyField(property, includeChildren);
             MarkPropertyAsHandled(property.propertyPath);
+            return isExpanded;
         }
 
-        public static void DrawProperty(Rect rect, SerializedProperty property, bool includeChildren = false)
+        public static bool DrawProperty(Rect position, SerializedProperty property, bool includeChildren = false)
         {
-            EditorGUI.PropertyField(rect, property, includeChildren);
+            var isExpanded = EditorGUI.PropertyField(position, property, includeChildren);
             MarkPropertyAsHandled(property.propertyPath);
+            return isExpanded;
         }
 
-        public static void DrawProperty(Rect rect, SerializedProperty property, GUIContent label, bool includeChildren = false)
+        public static bool DrawProperty(Rect position, SerializedProperty property, GUIContent label, bool includeChildren = false)
         {
-            EditorGUI.PropertyField(rect, property, label, includeChildren);
+            var isExpanded = EditorGUI.PropertyField(position, property, label, includeChildren);
             MarkPropertyAsHandled(property.propertyPath);
+            return isExpanded;
         }
     }
 }
