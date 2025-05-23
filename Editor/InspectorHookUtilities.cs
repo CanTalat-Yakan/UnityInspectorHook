@@ -9,8 +9,24 @@ using UnityEngine;
 
 namespace UnityEssentials
 {
+    /// <summary>
+    /// Provides utility methods for working with Unity's <see cref="SerializedProperty"/> and reflection-based
+    /// operations, such as iterating over methods, properties, and attributes.
+    /// </summary>
+    /// <remarks>This class is designed to assist with common tasks in Unity's editor scripting, such as
+    /// inspecting serialized objects, retrieving metadata, and processing collections of properties or methods. It
+    /// includes methods for iterating over serialized properties, determining property types, and accessing custom
+    /// attributes.</remarks>
     public class InspectorHookUtilities : MonoBehaviour
     {
+        /// <summary>
+        /// Iterates through all methods of the target object and invokes the specified action for each method.
+        /// </summary>
+        /// <remarks>This method retrieves all methods of the target object using reflection and applies
+        /// the provided action to each method. The target object is determined by the
+        /// <c>InspectorHook.Target</c>.</remarks>
+        /// <param name="onProcessMethod">An action to perform on each <see cref="MethodInfo"/> object representing a method of the target object.
+        /// This parameter cannot be <see langword="null"/>.</param>
         public static void IterateMethods(Action<MethodInfo> onProcessMethod)
         {
             var methods = InspectorHook.Target.GetType().GetMethods();
@@ -18,6 +34,15 @@ namespace UnityEssentials
                 onProcessMethod(method);
         }
 
+        /// <summary>
+        /// Iterates over the visible properties of a serialized object and applies the specified action to each
+        /// property.
+        /// </summary>
+        /// <remarks>This method skips the script field and begins processing from the next visible
+        /// property.  Ensure that <see cref="InspectorHook.SerializedObject"/> is properly initialized before calling
+        /// this method.</remarks>
+        /// <param name="onProcessProperty">An <see cref="Action{T}"/> delegate that is invoked for each visible <see cref="SerializedProperty"/>.  The
+        /// delegate receives the current property as its parameter.</param>
         public static void IterateProperties(Action<SerializedProperty> onProcessProperty)
         {
             var iterator = InspectorHook.SerializedObject.GetIterator();
@@ -26,6 +51,17 @@ namespace UnityEssentials
                 Iterate(iterator, onProcessProperty);
         }
 
+        /// <summary>
+        /// Iterates through the specified <see cref="SerializedProperty"/> and processes each visible property using
+        /// the provided action.
+        /// </summary>
+        /// <remarks>This method traverses the hierarchy of the given <see cref="SerializedProperty"/>,
+        /// including its children, and invokes the <paramref name="onProcessProperty"/> action for each visible
+        /// property. Nested properties are recursively iterated if they are expanded and meet specific conditions
+        /// (e.g., not arrays, collections, or dictionaries).</remarks>
+        /// <param name="property">The root <see cref="SerializedProperty"/> to iterate over. Must not be <c>null</c>.</param>
+        /// <param name="onProcessProperty">An action to execute for each visible property. The action receives a copy of the current property as its
+        /// parameter. Must not be <c>null</c>.</param>
         public static void Iterate(SerializedProperty property, Action<SerializedProperty> onProcessProperty)
         {
             var current = property.Copy();
@@ -127,6 +163,16 @@ namespace UnityEssentials
             return (attribute = method?.GetCustomAttributes(typeof(T), true).FirstOrDefault() as T) != null;
         }
 
+        /// <summary>
+        /// Retrieves the <see cref="FieldInfo"/> for the field represented by the specified <see
+        /// cref="SerializedProperty"/>.
+        /// </summary>
+        /// <remarks>This method traverses the property path of the <paramref name="property"/> to locate
+        /// the corresponding field,  including handling nested fields, base class fields, and special cases for Unity's
+        /// serialization system,  such as arrays and generic lists.</remarks>
+        /// <param name="property">The <see cref="SerializedProperty"/> for which to retrieve the corresponding <see cref="FieldInfo"/>.</param>
+        /// <returns>The <see cref="FieldInfo"/> of the field represented by the <paramref name="property"/>,  or <see
+        /// langword="null"/> if the field cannot be resolved.</returns>
         public static FieldInfo GetSerializedFieldInfo(SerializedProperty property)
         {
             var targetObject = property.serializedObject.targetObject;
@@ -168,6 +214,17 @@ namespace UnityEssentials
             return fieldInfo;
         }
 
+        /// <summary>
+        /// Retrieves the value of a <see cref="SerializedProperty"/> based on its type.
+        /// </summary>
+        /// <remarks>The method uses the <see cref="SerializedProperty.propertyType"/> to determine the
+        /// appropriate value to return.  For example, if the property type is <see
+        /// cref="SerializedPropertyType.Integer"/>, the method returns the <see
+        /// cref="SerializedProperty.intValue"/>.</remarks>
+        /// <param name="property">The <see cref="SerializedProperty"/> whose value is to be retrieved. This parameter cannot be <see
+        /// langword="null"/>.</param>
+        /// <returns>The value of the <paramref name="property"/> as an <see cref="object"/>, corresponding to its type.  Returns
+        /// <see langword="null"/> if the property type is unsupported.</returns>
         public static object GetPropertyValue(SerializedProperty property) =>
             property.propertyType switch
             {
