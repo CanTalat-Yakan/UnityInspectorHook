@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
@@ -64,6 +65,7 @@ namespace UnityEssentials
         private static List<HookEntry> s_onPostProcess = new();
 
         private static HashSet<string> s_handledProperties = new();
+        private static HashSet<MethodInfo> s_handledMethods = new();
 
         public static MonoBehaviour Target { get; private set; }
         public static SerializedObject SerializedObject { get; private set; }
@@ -75,6 +77,9 @@ namespace UnityEssentials
         public static void MarkPropertyAsHandled(string propertyPath) =>
             s_handledProperties.Add(propertyPath);
 
+        public static void MarkPropertyAsHandled(MethodInfo method) =>
+            s_handledMethods.Add(method);
+
         /// <summary>
         /// Determines whether the specified property path is handled.
         /// </summary>
@@ -82,6 +87,9 @@ namespace UnityEssentials
         /// <returns><see langword="true"/> if the specified property path is handled; otherwise, <see langword="false"/>.</returns>
         public static bool IsPropertyHandled(string propertyPath) =>
             s_handledProperties.Contains(propertyPath);
+
+        public static bool IsMethodHandled(MethodInfo method) =>
+            s_handledMethods.Contains(method);
 
         /// <summary>
         /// Resets the collection of handled properties to its initial state.
