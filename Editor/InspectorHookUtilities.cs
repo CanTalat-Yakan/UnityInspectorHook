@@ -235,7 +235,7 @@ namespace UnityEssentials
                 SerializedPropertyType.Color => property.colorValue,
                 SerializedPropertyType.ObjectReference => property.objectReferenceValue,
                 SerializedPropertyType.LayerMask => property.intValue,
-                SerializedPropertyType.Enum => property.enumValueIndex,
+                SerializedPropertyType.Enum => GetEnumValue(property, property.enumValueIndex),
                 SerializedPropertyType.Vector2 => property.vector2Value,
                 SerializedPropertyType.Vector3 => property.vector3Value,
                 SerializedPropertyType.Vector4 => property.vector4Value,
@@ -253,6 +253,72 @@ namespace UnityEssentials
                 SerializedPropertyType.ManagedReference => property.managedReferenceValue,
                 _ => null
             };
+
+        public static Type GetEnumType(FieldInfo fieldInfo)
+        {
+            var enumType = fieldInfo.FieldType;
+            if (enumType.IsArray)
+                enumType = enumType.GetElementType();
+            else if (enumType.IsGenericType)
+                enumType = enumType.GetGenericArguments()[0];
+            return enumType;
+        }
+
+        public static Type GetEnumType(SerializedProperty property)
+        {
+            // Try to get the FieldInfo for the property
+            var fieldInfo = GetSerializedFieldInfo(property);
+            if (fieldInfo != null)
+                return GetEnumType(fieldInfo);
+            return null;
+        }
+
+        public static Enum GetEnumValue(SerializedProperty property, int enumIndex)
+        {
+            var enumType = GetEnumType(property);
+            if (!enumType.IsEnum)
+                return null;
+            if (enumIndex < 0 || enumIndex >= Enum.GetNames(enumType).Length)
+                return null;
+
+            return (Enum)Enum.ToObject(enumType, enumIndex);
+        }
+
+        public static Enum GetCurrentValue(Type enumType, SerializedProperty property)
+        {
+            var enumName = property.enumNames[property.enumValueIndex];
+            return (Enum)Enum.Parse(enumType, enumName);
+        }
+
+        public static Enum GetCurrentValue(SerializedProperty property)
+        {
+            var enumType = GetEnumType(property);
+            var enumName = property.enumNames[property.enumValueIndex];
+            return (Enum)Enum.Parse(enumType, enumName);
+        }
+
+        public static Enum GetCurrentValue(FieldInfo fieldInfo, SerializedProperty property)
+        {
+            var enumType = GetEnumType(fieldInfo);
+            var enumName = property.enumNames[property.enumValueIndex];
+            return (Enum)Enum.Parse(enumType, enumName);
+        }
+
+        public static void SetEnumValue(SerializedProperty property, Enum newValue)
+        {
+            string newName = newValue.ToString();
+            int newIndex = Array.IndexOf(property.enumNames, newName);
+            SetEnumValue(property, newIndex);
+        }
+
+        public static void SetEnumValue(SerializedProperty property, int newIndex)
+        {
+            if (property != null && property.enumValueIndex != newIndex)
+            {
+                property.enumValueIndex = newIndex;
+                property.serializedObject.ApplyModifiedProperties();
+            }
+        }
     }
 }
 #endif
