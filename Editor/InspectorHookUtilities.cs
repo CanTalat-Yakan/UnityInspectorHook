@@ -226,7 +226,7 @@ namespace UnityEssentials
         /// <returns>The value of the <paramref name="property"/> as an <see cref="object"/>, corresponding to its type.  Returns
         /// <see langword="null"/> if the property type is unsupported.</returns>
         public static object GetPropertyValue(SerializedProperty property) =>
-            property.propertyType switch
+            property?.propertyType switch
             {
                 SerializedPropertyType.Integer => property.intValue,
                 SerializedPropertyType.Boolean => property.boolValue,

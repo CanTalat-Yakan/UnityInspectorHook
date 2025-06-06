@@ -80,6 +80,23 @@ namespace UnityEssentials
         public static void MarkPropertyAsHandled(MethodInfo method) =>
             s_handledMethods.Add(method);
 
+        public static void MarkPropertyAndChildrenAsHandled(SerializedProperty property)
+        {
+            MarkPropertyAsHandled(property.propertyPath);
+
+            if (property.hasVisibleChildren)
+            {
+                var iterator = property.Copy();
+                var endProperty = iterator.GetEndProperty();
+                bool enterChildren = true;
+                while (iterator.NextVisible(enterChildren) && !SerializedProperty.EqualContents(iterator, endProperty))
+                {
+                    MarkPropertyAsHandled(iterator.propertyPath);
+                    enterChildren = false;
+                }
+            }
+        }
+
         /// <summary>
         /// Determines whether the specified property path is handled.
         /// </summary>
