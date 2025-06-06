@@ -62,7 +62,8 @@ namespace UnityEssentials
 
             EditorGUI.indentLevel = property.depth;
 
-            InspectorHook.DrawProperty(property, true);
+            var enterChildren = property.isArray;
+            InspectorHook.DrawProperty(property, enterChildren);
         }
     }
 }
