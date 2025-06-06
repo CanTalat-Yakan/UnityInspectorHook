@@ -31,7 +31,7 @@ namespace UnityEssentials
         public Action<SerializedProperty> Hook;
         public int Priority;
     }
-    
+
     /// <summary>
     /// Represents an entry for a method hook, including the hook action and its execution priority.
     /// </summary>
@@ -59,9 +59,10 @@ namespace UnityEssentials
     /// APIs.</remarks>
     public static class InspectorHook
     {
-        private static List<HookEntry> s_onInitialization= new();
+        private static List<HookEntry> s_onInitialization = new();
         private static List<HookPropertyEntry> s_onProcessProperty = new();
         private static List<HookMethodEntry> s_onProcessMethod = new();
+        private static List<HookEntry> s_onPreProcess = new();
         private static List<HookEntry> s_onPostProcess = new();
 
         private static HashSet<string> s_handledProperties = new();
@@ -126,7 +127,7 @@ namespace UnityEssentials
             s_onInitialization.Add(new() { Hook = hook, Priority = priority });
             s_onInitialization.Sort((a, b) => b.Priority.CompareTo(a.Priority));
         }
-        
+
         /// <summary>
         /// Adds a process property hook with the specified priority to be executed during property processing.
         /// </summary>
@@ -142,7 +143,7 @@ namespace UnityEssentials
             s_onProcessProperty.Add(new() { Hook = hook, Priority = priority });
             s_onProcessProperty.Sort((a, b) => b.Priority.CompareTo(a.Priority));
         }
-        
+
         /// <summary>
         /// Registers a method hook to be invoked during the processing of methods, with an optional priority.
         /// </summary>
@@ -156,7 +157,7 @@ namespace UnityEssentials
             s_onProcessMethod.Add(new() { Hook = hook, Priority = priority });
             s_onProcessMethod.Sort((a, b) => b.Priority.CompareTo(a.Priority));
         }
-        
+
         /// <summary>
         /// Adds a post-processing action to be executed, with an optional priority.
         /// </summary>
@@ -169,6 +170,12 @@ namespace UnityEssentials
         {
             s_onPostProcess.Add(new() { Hook = hook, Priority = priority });
             s_onPostProcess.Sort((a, b) => b.Priority.CompareTo(a.Priority));
+        }
+
+        public static void AddPreProcess(Action hook, int priority = 0)
+        {
+            s_onPreProcess.Add(new() { Hook = hook, Priority = priority });
+            s_onPreProcess.Sort((a, b) => b.Priority.CompareTo(a.Priority));
         }
 
         /// <summary>
@@ -213,7 +220,7 @@ namespace UnityEssentials
             foreach (var entry in s_onProcessMethod)
                 entry.Hook(methodInfo);
         }
-        
+
         /// <summary>
         /// Invokes all registered post-processing hooks.
         /// </summary>
@@ -223,6 +230,12 @@ namespace UnityEssentials
         public static void InvokePostProcess()
         {
             foreach (var entry in s_onPostProcess)
+                entry.Hook();
+        }
+
+        public static void InvokePreProcess()
+        {
+            foreach (var entry in s_onPreProcess)
                 entry.Hook();
         }
 

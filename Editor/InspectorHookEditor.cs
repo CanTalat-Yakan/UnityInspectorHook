@@ -38,6 +38,7 @@ namespace UnityEssentials
 
             if (EditorGUI.EndChangeCheck())
             {
+                InspectorHook.InvokePreProcess();
                 serializedObject.ApplyModifiedProperties();
                 InspectorHook.InvokePostProcess();
             }
