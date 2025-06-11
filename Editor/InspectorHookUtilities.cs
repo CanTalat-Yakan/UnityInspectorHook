@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEssentials
 {
@@ -29,6 +30,9 @@ namespace UnityEssentials
         /// This parameter cannot be <see langword="null"/>.</param>
         public static void IterateMethods(Action<MethodInfo> onProcessMethod)
         {
+            if (!InspectorHook.Initialized)
+                return;
+
             var methods = InspectorHook.Target.GetType().GetMethods();
             foreach (var method in methods)
                 onProcessMethod(method);
@@ -45,7 +49,10 @@ namespace UnityEssentials
         /// delegate receives the current property as its parameter.</param>
         public static void IterateProperties(Action<SerializedProperty> onProcessProperty)
         {
-            var iterator = InspectorHook.SerializedObject.GetIterator();
+            if (!InspectorHook.Initialized)
+                return;
+
+            var iterator = InspectorHook.SerializedObject?.GetIterator();
             iterator.NextVisible(true); // Skip script field
             if (iterator.NextVisible(true))
                 Iterate(iterator, onProcessProperty);

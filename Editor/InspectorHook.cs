@@ -70,6 +70,19 @@ namespace UnityEssentials
 
         public static MonoBehaviour Target { get; private set; }
         public static SerializedObject SerializedObject { get; private set; }
+        public static bool Initialized { get; private set; } = false;
+
+        [InitializeOnLoadMethod]
+        public static void InspectorHookStateResetter() =>
+                Selection.selectionChanged += () => Cleanup();
+
+        public static void Cleanup()
+        {
+            Initialized = false;
+            SerializedObject = null;
+            Target = null;
+            ResetHandledProperties();
+        }
 
         /// <summary>
         /// Marks the specified property as handled by adding its path to the internal collection of handled properties.
@@ -188,6 +201,7 @@ namespace UnityEssentials
         /// <param name="editor">The editor instance to initialize. Must not be null.</param>
         public static void InvokeInitialization(Editor editor)
         {
+            Initialized = true;
             SerializedObject = editor.serializedObject;
             Target = editor.target as MonoBehaviour;
 
