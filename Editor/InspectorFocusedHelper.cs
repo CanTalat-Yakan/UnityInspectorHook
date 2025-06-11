@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEssentials
 {
@@ -12,33 +13,46 @@ namespace UnityEssentials
     /// that require interaction with rectangular areas in the Inspector.</remarks>
     public static class InspectorFocusedHelper
     {
-        /// <summary>
-        /// Processes a keyboard click event for a specified rectangular area.
-        /// </summary>
-        /// <remarks>This method checks if the specified rectangular area is focused and processes a
-        /// keyboard  Enter key press event. If the area is focused and <paramref name="drawOutline"/> is  <see
-        /// langword="true"/>, an outline is drawn around the area.</remarks>
-        /// <param name="position">The rectangular area to monitor for keyboard input.</param>
-        /// <param name="drawOutline">A value indicating whether to draw an outline around the rectangular area when it is focused. Defaults to
-        /// <see langword="true"/>.</param>
-        /// <returns><see langword="true"/> if the Enter key is pressed while the rectangular area is focused;  otherwise, <see
-        /// langword="false"/>.</returns>
-        public static bool ProcessKeyboardClick(Rect position, bool drawOutline = true)
-        {
-            var controlId = GetControlId(position);
-            var isControlFocused = GUIUtility.keyboardControl == controlId;
+        private static Color _outlineColor = new Color(0.25f, 0.5f, 1f, 1f);
 
-            if (isControlFocused && Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Return)
+        public static bool ProcessKeyboardInput(int controlID)
+        {
+            var isControlFocused = IsControlFocused(controlID);
+            if (!isControlFocused)
+                return false;
+
+            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Return)
             {
                 Event.current.Use();
                 return true;
             }
 
-            if (isControlFocused && drawOutline)
-                GUI.DrawTexture(position, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0, new Color(0.25f, 0.5f, 1f, 1f), 1, 1);
-
             return false;
         }
+
+        public static bool ProcessKeyboardClick(Rect position) =>
+            ProcessKeyboardClick(position, GetControlID(position));
+
+        public static bool ProcessKeyboardClick(Rect position, int controlID)
+        {
+            DrawFocusedOutline(controlID, position);
+            return ProcessKeyboardInput(controlID);
+        }
+
+        public static bool ProcessKeyboardClick(Rect position, out int controlID)
+        {
+            controlID = GetControlID(position);
+            return ProcessKeyboardClick(position, controlID);
+        }
+
+        public static void DrawFocusedOutline(int controlID, Rect position)
+        {
+            if (IsControlFocused(controlID))
+                GUI.DrawTexture(position, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0, _outlineColor, 1, 1);
+        }
+
+        public static bool IsControlFocused(int controlID) =>
+            GUIUtility.keyboardControl == controlID;
 
         /// <summary>
         /// Generates a unique control ID for a GUI element within the specified position.
@@ -49,7 +63,7 @@ namespace UnityEssentials
         /// <param name="position">The rectangular area on the screen that the control occupies.</param>
         /// <returns>A unique integer identifier for the control, which can be used to manage focus and interaction within the
         /// GUI system.</returns>
-        public static int GetControlId(Rect position) =>
+        public static int GetControlID(Rect position) =>
             GUIUtility.GetControlID(FocusType.Keyboard, position);
     }
 }
