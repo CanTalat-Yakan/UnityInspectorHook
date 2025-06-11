@@ -1,7 +1,6 @@
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace UnityEssentials
 {
@@ -13,7 +12,20 @@ namespace UnityEssentials
     /// that require interaction with rectangular areas in the Inspector.</remarks>
     public static class InspectorFocusedHelper
     {
-        private static Color _outlineColor = new Color(0.25f, 0.5f, 1f, 1f);
+        public static bool ProcessKeyboardClick(Rect position) =>
+            ProcessKeyboardClick(position, GetControlID(position));
+
+        public static bool ProcessKeyboardClick(Rect position, out int controlID)
+        {
+            controlID = GetControlID(position);
+            return ProcessKeyboardClick(position, controlID);
+        }
+
+        public static bool ProcessKeyboardClick(Rect position, int controlID)
+        {
+            DrawFocusedOutline(controlID, position);
+            return ProcessKeyboardInput(controlID);
+        }
 
         public static bool ProcessKeyboardInput(int controlID)
         {
@@ -30,21 +42,7 @@ namespace UnityEssentials
             return false;
         }
 
-        public static bool ProcessKeyboardClick(Rect position) =>
-            ProcessKeyboardClick(position, GetControlID(position));
-
-        public static bool ProcessKeyboardClick(Rect position, int controlID)
-        {
-            DrawFocusedOutline(controlID, position);
-            return ProcessKeyboardInput(controlID);
-        }
-
-        public static bool ProcessKeyboardClick(Rect position, out int controlID)
-        {
-            controlID = GetControlID(position);
-            return ProcessKeyboardClick(position, controlID);
-        }
-
+        private static Color _outlineColor = new Color(0.25f, 0.5f, 1f, 1f);
         public static void DrawFocusedOutline(int controlID, Rect position)
         {
             if (IsControlFocused(controlID))
