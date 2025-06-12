@@ -52,10 +52,25 @@ namespace UnityEssentials
             if (!InspectorHook.Initialized)
                 return;
 
+
             var iterator = InspectorHook.SerializedObject?.GetIterator();
-            iterator.NextVisible(true); // Skip script field
+
+            if (!DrawScriptField(iterator))
+                iterator.NextVisible(true); // Skip script field
             if (iterator.NextVisible(true))
                 Iterate(iterator, onProcessProperty);
+        }
+
+        private static bool DrawScriptField(SerializedProperty iterator)
+        {
+            // Check if there is any property after m_Script
+            var temp = iterator.Copy();
+            int visibleCount = 0;
+            while (temp.NextVisible(true))
+                visibleCount++;
+
+            return visibleCount == 1;
+
         }
 
         /// <summary>
