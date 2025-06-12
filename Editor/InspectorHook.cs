@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Unity.Properties;
 using UnityEditor;
 using UnityEngine;
 
@@ -65,7 +66,9 @@ namespace UnityEssentials
         private static List<HookEntry> s_onPreProcess = new();
         private static List<HookEntry> s_onPostProcess = new();
 
+        private static HashSet<string> s_disabledProperties = new();
         private static HashSet<string> s_handledProperties = new();
+        private static HashSet<MethodInfo> s_disabledMethods = new();
         private static HashSet<MethodInfo> s_handledMethods = new();
 
         public static MonoBehaviour Target { get; private set; }
@@ -81,18 +84,34 @@ namespace UnityEssentials
             Initialized = false;
             SerializedObject = null;
             Target = null;
-            ResetHandledProperties();
+            
+            ResetHandledDisabledProperties();
+            ResetHandledDisabledMethods();
         }
 
-        /// <summary>
-        /// Marks the specified property as handled by adding its path to the internal collection of handled properties.
-        /// </summary>
-        /// <param name="propertyPath">The path of the property to mark as handled. This value cannot be <see langword="null"/> or empty.</param>
+        public static void ResetHandledDisabledProperties()
+        {
+            s_handledProperties.Clear();
+            s_disabledProperties.Clear();
+        }
+
+        public static void ResetHandledDisabledMethods()
+        {
+            s_handledMethods.Clear();
+            s_disabledMethods.Clear();
+        }
+
         public static void MarkPropertyAsHandled(string propertyPath) =>
             s_handledProperties.Add(propertyPath);
 
-        public static void MarkPropertyAsHandled(MethodInfo method) =>
+        public static void MarkPropertyDisabled(string propertyPath) =>
+            s_disabledProperties.Add(propertyPath);
+
+        public static void MarkMethodAsHandled(MethodInfo method) =>
             s_handledMethods.Add(method);
+
+        public static void MarkMethodDisabled(MethodInfo method) =>
+            s_disabledMethods.Add(method);
 
         public static void MarkPropertyAndChildrenAsHandled(SerializedProperty property)
         {
@@ -111,14 +130,34 @@ namespace UnityEssentials
             }
         }
 
+        public static void MarkPropertyAndChildrenDisabled(SerializedProperty property)
+        {
+            MarkPropertyDisabled(property.propertyPath);
+
+            if (property.hasVisibleChildren)
+            {
+                var iterator = property.Copy();
+                var endProperty = iterator.GetEndProperty();
+                bool enterChildren = true;
+                while (iterator.NextVisible(enterChildren) && !SerializedProperty.EqualContents(iterator, endProperty))
+                {
+                    MarkPropertyDisabled(iterator.propertyPath);
+                    enterChildren = false;
+                }
+            }
+        }
+
         public static bool IsPropertyHandled(string propertyPath) =>
             s_handledProperties.Contains(propertyPath);
+
+        public static bool IsPropertyDisabled(string propertyPath) =>
+            s_disabledProperties.Contains(propertyPath);
 
         public static bool IsMethodHandled(MethodInfo method) =>
             s_handledMethods.Contains(method);
 
-        public static void ResetHandledProperties() =>
-            s_handledProperties.Clear();
+        public static bool IsMethodDisabled(MethodInfo method) =>
+            s_disabledMethods.Contains(method);
 
         public static void AddInitialization(Action hook, int priority = 0)
         {

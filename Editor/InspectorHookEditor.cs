@@ -18,18 +18,13 @@ namespace UnityEssentials
     [CustomEditor(typeof(MonoBehaviour), true)]
     public class InspectorHookEditor : Editor
     {
-        /// <summary>
-        /// Draws and processes the custom inspector GUI for the associated object.
-        /// </summary>
-        /// <remarks>This method is called by the Unity Editor to render and handle the inspector
-        /// interface for the object. It updates the serialized object, processes properties and methods using hooks,
-        /// and applies any changes made in the inspector.</remarks>
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
             EditorGUI.BeginChangeCheck();
 
-            InspectorHook.ResetHandledProperties();
+            InspectorHook.ResetHandledDisabledProperties();
+            InspectorHook.ResetHandledDisabledMethods();
 
             InspectorHook.InvokeInitialization(this);
 
@@ -44,19 +39,15 @@ namespace UnityEssentials
             }
         }
 
-        /// <summary>
-        /// Processes the specified serialized property, applying custom handling and rendering logic.
-        /// </summary>
-        /// <remarks>This method checks if the property has already been handled using the <see
-        /// cref="InspectorHook"/>  and skips further processing if so. If not handled, it invokes custom property
-        /// processing logic  and renders the property using the appropriate indentation level.</remarks>
-        /// <param name="property">The serialized property to process. Cannot be null.</param>
         private void ProcessProperty(SerializedProperty property)
         {
             if (InspectorHook.IsPropertyHandled(property.propertyPath))
                 return;
 
             InspectorHook.InvokeProcessProperties(property);
+
+            if (InspectorHook.IsPropertyDisabled(property.propertyPath))
+                GUI.enabled = false;
 
             if (InspectorHook.IsPropertyHandled(property.propertyPath))
                 return;
@@ -65,6 +56,8 @@ namespace UnityEssentials
 
             var enterChildren = property.isArray;
             InspectorHook.DrawProperty(property, enterChildren);
+
+            GUI.enabled = true;
         }
     }
 }
