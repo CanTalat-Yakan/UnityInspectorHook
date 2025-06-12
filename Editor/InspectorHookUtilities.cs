@@ -195,11 +195,21 @@ namespace UnityEssentials
         /// langword="null"/> if the field cannot be resolved.</returns>
         public static FieldInfo GetSerializedFieldInfo(SerializedProperty property)
         {
-            if (!InspectorHook.Initialized)
+            if (!InspectorHook.Initialized || property == null)
                 return null;
 
-            var targetObject = property.serializedObject.targetObject;
-            var pathSegments = property.propertyPath.Split('.');
+            var serializedObject = property.serializedObject;
+            if (serializedObject == null)
+                return null;
+
+            var targetObject = serializedObject.targetObject;
+            if (targetObject == null)
+                return null;
+
+            var pathSegments = property.propertyPath?.Split('.');
+            if (pathSegments == null)
+                return null;
+
             FieldInfo fieldInfo = null;
             Type currentType = targetObject.GetType();
 
