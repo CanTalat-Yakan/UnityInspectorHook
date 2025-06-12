@@ -52,7 +52,6 @@ namespace UnityEssentials
             if (!InspectorHook.Initialized)
                 return;
 
-
             var iterator = InspectorHook.SerializedObject?.GetIterator();
 
             if (!DrawScriptField(iterator))
@@ -197,6 +196,9 @@ namespace UnityEssentials
         /// langword="null"/> if the field cannot be resolved.</returns>
         public static FieldInfo GetSerializedFieldInfo(SerializedProperty property)
         {
+            if (!InspectorHook.Initialized)
+                return null;
+
             var targetObject = property.serializedObject.targetObject;
             var pathSegments = property.propertyPath.Split('.');
             FieldInfo fieldInfo = null;
