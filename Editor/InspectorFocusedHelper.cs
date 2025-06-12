@@ -52,6 +52,9 @@ namespace UnityEssentials
         public static bool IsControlFocused(int controlID) =>
             GUIUtility.keyboardControl == controlID;
 
+        public static void SetControlFocused(int controlID) =>
+            GUIUtility.keyboardControl = controlID;
+
         /// <summary>
         /// Generates a unique control ID for a GUI element within the specified position.
         /// </summary>
