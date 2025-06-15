@@ -10,7 +10,7 @@ namespace UnityEssentials
     /// <remarks>This class contains utility methods to assist with managing keyboard focus and processing
     /// input events for specific UI elements in the Unity Editor. It is particularly useful for custom editor scripts
     /// that require interaction with rectangular areas in the Inspector.</remarks>
-    public static class InspectorFocusedHelper
+    public static class InspectorFocusHelper
     {
         public static bool ProcessKeyboardClick(Rect position) =>
             ProcessKeyboardClick(position, GetControlID(position));
