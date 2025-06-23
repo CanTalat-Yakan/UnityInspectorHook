@@ -258,34 +258,43 @@ namespace UnityEssentials
         /// langword="null"/>.</param>
         /// <returns>The value of the <paramref name="property"/> as an <see cref="object"/>, corresponding to its type.  Returns
         /// <see langword="null"/> if the property type is unsupported.</returns>
-        public static object GetPropertyValue(SerializedProperty property) =>
-            property?.propertyType switch
+        public static object GetPropertyValue(SerializedProperty property)
+        {
+            if (property == null || property.serializedObject == null)
+                return null;
+
+            try
             {
-                SerializedPropertyType.Integer => property.intValue,
-                SerializedPropertyType.Boolean => property.boolValue,
-                SerializedPropertyType.Float => property.floatValue,
-                SerializedPropertyType.String => property.stringValue,
-                SerializedPropertyType.Color => property.colorValue,
-                SerializedPropertyType.ObjectReference => property.objectReferenceValue,
-                SerializedPropertyType.LayerMask => property.intValue,
-                SerializedPropertyType.Enum => GetEnumValue(property, property.enumValueIndex),
-                SerializedPropertyType.Vector2 => property.vector2Value,
-                SerializedPropertyType.Vector3 => property.vector3Value,
-                SerializedPropertyType.Vector4 => property.vector4Value,
-                SerializedPropertyType.Rect => property.rectValue,
-                SerializedPropertyType.ArraySize => property.arraySize,
-                SerializedPropertyType.Character => (char)property.intValue,
-                SerializedPropertyType.AnimationCurve => property.animationCurveValue,
-                SerializedPropertyType.Bounds => property.boundsValue,
-                SerializedPropertyType.Quaternion => property.quaternionValue,
-                SerializedPropertyType.ExposedReference => property.exposedReferenceValue,
-                SerializedPropertyType.Vector2Int => property.vector2IntValue,
-                SerializedPropertyType.Vector3Int => property.vector3IntValue,
-                SerializedPropertyType.RectInt => property.rectIntValue,
-                SerializedPropertyType.BoundsInt => property.boundsIntValue,
-                SerializedPropertyType.ManagedReference => property.managedReferenceValue,
-                _ => null
-            };
+                return property.propertyType switch
+                {
+                    SerializedPropertyType.Integer => property.intValue,
+                    SerializedPropertyType.Boolean => property.boolValue,
+                    SerializedPropertyType.Float => property.floatValue,
+                    SerializedPropertyType.String => property.stringValue,
+                    SerializedPropertyType.Color => property.colorValue,
+                    SerializedPropertyType.ObjectReference => property.objectReferenceValue,
+                    SerializedPropertyType.LayerMask => property.intValue,
+                    SerializedPropertyType.Enum => GetEnumValue(property, property.enumValueIndex),
+                    SerializedPropertyType.Vector2 => property.vector2Value,
+                    SerializedPropertyType.Vector3 => property.vector3Value,
+                    SerializedPropertyType.Vector4 => property.vector4Value,
+                    SerializedPropertyType.Rect => property.rectValue,
+                    SerializedPropertyType.ArraySize => property.arraySize,
+                    SerializedPropertyType.Character => (char)property.intValue,
+                    SerializedPropertyType.AnimationCurve => property.animationCurveValue,
+                    SerializedPropertyType.Bounds => property.boundsValue,
+                    SerializedPropertyType.Quaternion => property.quaternionValue,
+                    SerializedPropertyType.ExposedReference => property.exposedReferenceValue,
+                    SerializedPropertyType.Vector2Int => property.vector2IntValue,
+                    SerializedPropertyType.Vector3Int => property.vector3IntValue,
+                    SerializedPropertyType.RectInt => property.rectIntValue,
+                    SerializedPropertyType.BoundsInt => property.boundsIntValue,
+                    SerializedPropertyType.ManagedReference => property.managedReferenceValue,
+                    _ => null
+                };
+            }
+            catch (NullReferenceException) { return null; }
+        }
 
         public static Type GetEnumType(FieldInfo fieldInfo)
         {
