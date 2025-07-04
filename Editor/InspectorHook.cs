@@ -242,11 +242,17 @@ namespace UnityEssentials
         /// </summary>
         /// <param name="methodInfos">When this method returns, contains a list of <see cref="MethodInfo"/> objects representing the retrieved
         /// methods. The list is initialized within the method and populated with the results.</param>
-        public static void GetAllMethods(out List<MethodInfo> methodInfos)
+        public static void GetAllMethods(out List<MethodInfo> methodInfos) =>
+            GetAllMethods(true, out methodInfos);
+
+        public static void GetAllMethods(bool recursively, out List<MethodInfo> methodInfos)
         {
             methodInfos = new();
 
             InspectorHookUtilities.IterateMethods(Target.GetType(), methodInfos.Add);
+
+            if (!recursively)
+                return;
 
             GetAllProperties(out var properties);
             foreach (var property in properties)
