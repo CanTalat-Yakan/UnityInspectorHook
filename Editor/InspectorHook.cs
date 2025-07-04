@@ -84,7 +84,7 @@ namespace UnityEssentials
             Initialized = false;
             SerializedObject = null;
             Target = null;
-            
+
             ResetHandledDisabledProperties();
             ResetHandledDisabledMethods();
         }
@@ -245,7 +245,15 @@ namespace UnityEssentials
         public static void GetAllMethods(out List<MethodInfo> methodInfos)
         {
             methodInfos = new();
-            InspectorHookUtilities.IterateMethods(methodInfos.Add);
+
+            InspectorHookUtilities.IterateMethods(Target.GetType(), methodInfos.Add);
+
+            GetAllProperties(out var properties);
+            foreach (var property in properties)
+            {
+                var fieldInfo = InspectorHookUtilities.GetSerializedFieldInfo(property);
+                InspectorHookUtilities.IterateMethods(fieldInfo.FieldType, methodInfos.Add);
+            }
         }
 
         /// <summary>

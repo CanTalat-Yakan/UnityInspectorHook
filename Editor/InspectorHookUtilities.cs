@@ -27,12 +27,16 @@ namespace UnityEssentials
         /// <c>InspectorHook.Target</c>.</remarks>
         /// <param name="onProcessMethod">An action to perform on each <see cref="MethodInfo"/> object representing a method of the target object.
         /// This parameter cannot be <see langword="null"/>.</param>
-        public static void IterateMethods(Action<MethodInfo> onProcessMethod)
+        public static void IterateMethods(Action<MethodInfo> onProcessMethod) =>
+            IterateMethods(InspectorHook.Target.GetType(), onProcessMethod);
+
+        public static void IterateMethods(Type type, Action<MethodInfo> onProcessMethod)
         {
             if (!InspectorHook.Initialized)
                 return;
 
-            var methods = InspectorHook.Target.GetType().GetMethods();
+            var bindingFlags = BindingFlags.Instance | BindingFlags.Public;
+            var methods = type.GetMethods(bindingFlags);
             foreach (var method in methods)
                 onProcessMethod(method);
         }
@@ -245,6 +249,36 @@ namespace UnityEssentials
             }
 
             return fieldInfo;
+        }
+
+        public static object GetTargetObjectOfProperty(SerializedProperty property)
+        {
+            if (property == null)
+                return null;
+
+            object targetObject = property.serializedObject.targetObject;
+            string path = property.propertyPath.Replace(".Array.data[", "[");
+
+            var elements = path.Split('.');
+            foreach (var element in elements.Take(elements.Length - 1)) // skip the last, which is the property itself
+            {
+                const BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
+                if (element.Contains("["))
+                {
+                    var elementName = element.Substring(0, element.IndexOf("["));
+                    var index = int.Parse(element.Substring(element.IndexOf("[")).Replace("[", "").Replace("]", ""));
+                    var field = targetObject.GetType().GetField(elementName, bindingFlags);
+                    var list = field.GetValue(targetObject) as IList;
+                    targetObject = list[index];
+                }
+                else
+                {
+                    var field = targetObject.GetType().GetField(element, bindingFlags);
+                    targetObject = field.GetValue(targetObject);
+                }
+            }
+
+            return targetObject;
         }
 
         /// <summary>
