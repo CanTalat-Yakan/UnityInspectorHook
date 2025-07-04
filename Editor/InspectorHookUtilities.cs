@@ -32,6 +32,9 @@ namespace UnityEssentials
 
         public static void IterateMethods(Type type, Action<MethodInfo> onProcessMethod)
         {
+            if (type == null || onProcessMethod == null)
+                return;
+
             if (!InspectorHook.Initialized)
                 return;
 

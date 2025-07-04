@@ -252,7 +252,7 @@ namespace UnityEssentials
             foreach (var property in properties)
             {
                 var fieldInfo = InspectorHookUtilities.GetSerializedFieldInfo(property);
-                InspectorHookUtilities.IterateMethods(fieldInfo.FieldType, methodInfos.Add);
+                InspectorHookUtilities.IterateMethods(fieldInfo?.FieldType, methodInfos.Add);
             }
         }
 
