@@ -256,7 +256,7 @@ namespace UnityEssentials
 
         public static object GetTargetObjectOfProperty(SerializedProperty property)
         {
-            if (property == null)
+            if (property?.serializedObject?.targetObject == null)
                 return null;
 
             object targetObject = property.serializedObject.targetObject;
