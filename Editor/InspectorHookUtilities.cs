@@ -17,7 +17,7 @@ namespace UnityEssentials
     /// inspecting serialized objects, retrieving metadata, and processing collections of properties or methods. It
     /// includes methods for iterating over serialized properties, determining property types, and accessing custom
     /// attributes.</remarks>
-    public class InspectorHookUtilities : MonoBehaviour
+    public static class InspectorHookUtilities
     {
         /// <summary>
         /// Iterates through all methods of the target object and invokes the specified action for each method.
