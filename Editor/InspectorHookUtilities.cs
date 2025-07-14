@@ -72,10 +72,13 @@ namespace UnityEssentials
             var temp = iterator.Copy();
             int visibleCount = 0;
             while (temp.NextVisible(true))
+            {
                 visibleCount++;
+                if(visibleCount == 2)
+                    break;
+            }
 
             return visibleCount == 1;
-
         }
 
         /// <summary>
