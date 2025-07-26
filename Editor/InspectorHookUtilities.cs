@@ -74,7 +74,7 @@ namespace UnityEssentials
             while (temp.NextVisible(true))
             {
                 visibleCount++;
-                if(visibleCount == 2)
+                if (visibleCount == 2)
                     break;
             }
 
@@ -305,7 +305,8 @@ namespace UnityEssentials
 
             try
             {
-                return property.propertyType switch
+                // Handle Unity built-in property types first
+                var value = property.propertyType switch
                 {
                     SerializedPropertyType.Integer => property.intValue,
                     SerializedPropertyType.Boolean => property.boolValue,
@@ -332,6 +333,27 @@ namespace UnityEssentials
                     SerializedPropertyType.ManagedReference => property.managedReferenceValue,
                     _ => null
                 };
+                if (value != null)
+                    return value;
+
+                // Fallback: Try to get value via reflection (field or property)
+                object target = property.serializedObject.targetObject;
+                Type targetType = target?.GetType();
+                if (targetType != null)
+                {
+                    var bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+                    var fieldInfo = targetType.GetField(property.name, bindingFlags);
+                    if (fieldInfo != null)
+                        return fieldInfo.GetValue(target);
+
+                    var propertyInfo = targetType.GetProperty(property.name, bindingFlags);
+                    if (propertyInfo != null)
+                        return propertyInfo.GetValue(target);
+                }
+
+                // If all else fails, return null
+                return null;
             }
             catch (NullReferenceException) { return null; }
         }
