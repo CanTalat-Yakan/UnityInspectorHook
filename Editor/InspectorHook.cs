@@ -77,7 +77,7 @@ namespace UnityEssentials
 
         [InitializeOnLoadMethod]
         public static void InspectorHookStateResetter() =>
-                Selection.selectionChanged += () => Cleanup();
+            Selection.selectionChanged += () => Cleanup();
 
         public static void Cleanup()
         {
