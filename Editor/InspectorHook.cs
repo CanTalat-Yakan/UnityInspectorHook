@@ -1,11 +1,10 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using Unity.Properties;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace UnityEssentials
 {
@@ -58,6 +57,7 @@ namespace UnityEssentials
     /// object. - Drawing properties in the Inspector while marking them as handled.  This class is designed for use in
     /// Unity Editor extensions and assumes familiarity with Unity's  SerializedObject, SerializedProperty, and Editor
     /// APIs.</remarks>
+    [DefaultExecutionOrder(-2000)]
     public static class InspectorHook
     {
         private static List<HookEntry> s_onInitialization = new();
@@ -71,19 +71,21 @@ namespace UnityEssentials
         private static HashSet<MethodInfo> s_disabledMethods = new();
         private static HashSet<MethodInfo> s_handledMethods = new();
 
-        public static MonoBehaviour Target { get; private set; }
+        public static Object Target { get; private set; }
+        public static Object[] Targets { get; private set; }
         public static SerializedObject SerializedObject { get; private set; }
         public static bool Initialized { get; private set; } = false;
 
         [InitializeOnLoadMethod]
-        public static void InspectorHookStateResetter() =>
-            Selection.selectionChanged += () => Cleanup();
+        public static void RegisterInspectorHookStateReset() =>
+            Selection.selectionChanged += () => ResetState();
 
-        public static void Cleanup()
+        public static void ResetState()
         {
-            Initialized = false;
-            SerializedObject = null;
             Target = null;
+            Targets = null;
+            SerializedObject = null;
+            Initialized = false;
 
             ResetHandledDisabledProperties();
             ResetHandledDisabledMethods();
@@ -193,7 +195,8 @@ namespace UnityEssentials
         {
             Initialized = true;
             SerializedObject = editor.serializedObject;
-            Target = editor.target as MonoBehaviour;
+            Targets = editor.targets;
+            Target = editor.target;
 
             foreach (var entry in s_onInitialization)
                 entry.Hook();
@@ -201,6 +204,8 @@ namespace UnityEssentials
 
         public static void InvokeProcessProperties(SerializedProperty serializedProperty)
         {
+            Target = InspectorHookUtilities.GetTargetObjectOfProperty(serializedProperty) as Object;
+
             foreach (var entry in s_onProcessProperty)
                 entry.Hook(serializedProperty);
         }
@@ -249,7 +254,8 @@ namespace UnityEssentials
         {
             methodInfos = new();
 
-            InspectorHookUtilities.IterateMethods(Target.GetType(), methodInfos.Add);
+            if (Target != null)
+                InspectorHookUtilities.IterateMethods(Target.GetType(), methodInfos.Add);
 
             if (!recursively)
                 return;

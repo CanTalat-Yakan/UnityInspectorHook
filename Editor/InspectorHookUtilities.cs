@@ -28,7 +28,7 @@ namespace UnityEssentials
         /// <param name="onProcessMethod">An action to perform on each <see cref="MethodInfo"/> object representing a method of the target object.
         /// This parameter cannot be <see langword="null"/>.</param>
         public static void IterateMethods(Action<MethodInfo> onProcessMethod) =>
-            IterateMethods(InspectorHook.Target.GetType(), onProcessMethod);
+            IterateMethods(InspectorHook.Target?.GetType(), onProcessMethod);
 
         public static void IterateMethods(Type type, Action<MethodInfo> onProcessMethod)
         {
@@ -48,7 +48,7 @@ namespace UnityEssentials
         /// Iterates over the visible properties of a serialized object and applies the specified action to each
         /// property.
         /// </summary>
-        /// <remarks>This method skips the script field and begins processing from the next visible
+        /// <remarks>This method skips the script property and begins processing from the next visible
         /// property.  Ensure that <see cref="InspectorHook.SerializedObject"/> is properly initialized before calling
         /// this method.</remarks>
         /// <param name="onProcessProperty">An <see cref="Action{T}"/> delegate that is invoked for each visible <see cref="SerializedProperty"/>.  The
@@ -58,10 +58,13 @@ namespace UnityEssentials
             if (!InspectorHook.Initialized)
                 return;
 
-            var iterator = InspectorHook.SerializedObject?.GetIterator();
+            if (InspectorHook.Target == null || InspectorHook.SerializedObject == null)
+                return;
+
+            var iterator = InspectorHook.SerializedObject.GetIterator();
 
             if (!DrawScriptField(iterator))
-                iterator.NextVisible(true); // Skip script field
+                iterator.NextVisible(true); // Skip script property
             if (iterator.NextVisible(true))
                 Iterate(iterator, onProcessProperty);
         }
@@ -194,15 +197,15 @@ namespace UnityEssentials
         }
 
         /// <summary>
-        /// Retrieves the <see cref="FieldInfo"/> for the field represented by the specified <see
+        /// Retrieves the <see cref="FieldInfo"/> for the property represented by the specified <see
         /// cref="SerializedProperty"/>.
         /// </summary>
         /// <remarks>This method traverses the property path of the <paramref name="property"/> to locate
-        /// the corresponding field,  including handling nested fields, base class fields, and special cases for Unity's
+        /// the corresponding property,  including handling nested fields, base class fields, and special cases for Unity's
         /// serialization system,  such as arrays and generic lists.</remarks>
         /// <param name="property">The <see cref="SerializedProperty"/> for which to retrieve the corresponding <see cref="FieldInfo"/>.</param>
-        /// <returns>The <see cref="FieldInfo"/> of the field represented by the <paramref name="property"/>,  or <see
-        /// langword="null"/> if the field cannot be resolved.</returns>
+        /// <returns>The <see cref="FieldInfo"/> of the property represented by the <paramref name="property"/>,  or <see
+        /// langword="null"/> if the property cannot be resolved.</returns>
         public static FieldInfo GetSerializedFieldInfo(SerializedProperty property)
         {
             if (!InspectorHook.Initialized || property == null)
@@ -336,7 +339,7 @@ namespace UnityEssentials
                 if (value != null)
                     return value;
 
-                // Fallback: Try to get value via reflection (field or property)
+                // Fallback: Try to get value via reflection (property or property)
                 object target = property.serializedObject.targetObject;
                 Type targetType = target?.GetType();
                 if (targetType != null)
@@ -421,6 +424,81 @@ namespace UnityEssentials
             {
                 property.enumValueIndex = newIndex;
                 property.serializedObject.ApplyModifiedProperties();
+            }
+        }
+
+        public static void DrawStaticFields(Type type)
+        {
+            if(type == null)
+                return;
+
+            var bindingFlags = BindingFlags.Static | BindingFlags.Public;
+            var staticProperties = type.GetProperties(bindingFlags);
+
+            EditorGUILayout.Space();
+
+            foreach (var property in staticProperties)
+            {
+                object value = property.GetValue(null);
+
+                var hideAttributes = property.GetCustomAttributes(typeof(HideInInspector), true);
+                if (hideAttributes.Length > 0)
+                    continue;
+
+                string nicifiedLabel = ObjectNames.NicifyVariableName(property.Name);
+
+                var setter = property.GetSetMethod(true);
+                bool setterIsPublic = setter != null && setter.IsPublic;
+
+                if (!setterIsPublic)
+                {
+                    if (IsDictionary(property.PropertyType))
+                    {
+                        var fieldString = (value as IDictionary).GetType().ToString().Split('[')[1].TrimEnd(']').Replace(",", ", ");
+                        EditorGUILayout.LabelField(nicifiedLabel, fieldString);
+
+                        if (value != null)
+                        {
+                            EditorGUI.indentLevel++;
+                            try
+                            {
+                                foreach (DictionaryEntry entry in (IDictionary)value)
+                                    EditorGUILayout.LabelField(entry.Key?.ToString() ?? "null", entry.Value?.ToString() ?? "null");
+                            }
+                            catch { }
+                            EditorGUI.indentLevel--;
+                        }
+                    }
+                    else EditorGUILayout.LabelField(nicifiedLabel, value?.ToString() ?? "null");
+                }
+                else
+                {
+                    if (property.PropertyType == typeof(int))
+                        value = EditorGUILayout.IntField(nicifiedLabel, (int)value);
+                    else if (property.PropertyType == typeof(float))
+                        value = EditorGUILayout.FloatField(nicifiedLabel, (float)value);
+                    else if (property.PropertyType == typeof(bool))
+                        value = EditorGUILayout.Toggle(nicifiedLabel, (bool)value);
+                    else if (property.PropertyType == typeof(string))
+                        value = EditorGUILayout.TextField(nicifiedLabel, (string)value);
+                    else if (property.PropertyType.IsEnum)
+                        value = EditorGUILayout.EnumPopup(nicifiedLabel, (Enum)value);
+                    else if (IsDictionary(property.PropertyType))
+                        EditorGUILayout.LabelField(nicifiedLabel, "Dictionary (use custom editor)");
+                    else EditorGUILayout.LabelField(nicifiedLabel, value != null ? value.ToString() : "null");
+
+                    if (setterIsPublic)
+                    {
+                        try
+                        {
+                            property.SetValue(null, value);
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogError($"Failed to set property {property.Name}: {e.Message}");
+                        }
+                    }
+                }
             }
         }
     }

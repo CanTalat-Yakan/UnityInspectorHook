@@ -1,7 +1,6 @@
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
-using static UnityEngine.GraphicsBuffer;
 
 namespace UnityEssentials
 {
@@ -17,6 +16,7 @@ namespace UnityEssentials
     /// <see cref="CustomEditorAttribute"/>  and specify <see cref="InspectorHookEditor"/> as the custom editor type.
     /// </para></remarks>
     [CustomEditor(typeof(MonoBehaviour), true)]
+    [DefaultExecutionOrder(-2010)]
     public class InspectorHookEditor : Editor
     {
         public override void OnInspectorGUI()
@@ -30,7 +30,9 @@ namespace UnityEssentials
             InspectorHook.InvokeInitialization(this);
 
             InspectorHookUtilities.IterateProperties(ProcessProperty);
+            InspectorHookUtilities.DrawStaticFields(target.GetType());
             InspectorHookUtilities.IterateMethods(InspectorHook.InvokeProcessMethod);
+
 
             if (EditorGUI.EndChangeCheck())
             {
