@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace UnityEssentials
 {
@@ -38,7 +39,7 @@ namespace UnityEssentials
             if (!InspectorHook.Initialized)
                 return;
 
-            var bindingFlags = BindingFlags.Instance | BindingFlags.Public;
+            var bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly;
             var methods = type.GetMethods(bindingFlags);
             foreach (var method in methods)
                 onProcessMethod(method);
@@ -184,6 +185,12 @@ namespace UnityEssentials
             return (attribute = field?.GetCustomAttributes(typeof(T), true).FirstOrDefault() as T) != null;
         }
 
+        public static bool HasAttribute<T>(SerializedProperty property) where T : class
+        {
+            var field = GetSerializedFieldInfo(property);
+            return field?.GetCustomAttributes(typeof(T), true).Any() ?? false;
+        }
+
         public static bool TryGetAttributes<T>(MethodInfo method, out T[] attributes) where T : class
         {
             attributes = method?.GetCustomAttributes(typeof(T), true).Cast<T>().ToArray() ?? default;
@@ -195,6 +202,9 @@ namespace UnityEssentials
             attribute = null;
             return (attribute = method?.GetCustomAttributes(typeof(T), true).FirstOrDefault() as T) != null;
         }
+
+        public static bool HasAttribute<T>(MethodInfo method) where T : class =>
+            method?.GetCustomAttributes(typeof(T), true).Any() ?? false;
 
         /// <summary>
         /// Retrieves the <see cref="FieldInfo"/> for the property represented by the specified <see
@@ -260,34 +270,11 @@ namespace UnityEssentials
             return fieldInfo;
         }
 
-        public static object GetTargetObjectOfProperty(SerializedProperty property)
+        public static Object GetTargetObjectOfProperty(SerializedProperty property)
         {
-            if (property?.serializedObject?.targetObject == null)
-                return null;
-
-            object targetObject = property.serializedObject.targetObject;
-            string path = property.propertyPath.Replace(".Array.data[", "[");
-
-            var elements = path.Split('.');
-            foreach (var element in elements.Take(elements.Length - 1)) // skip the last, which is the property itself
-            {
-                const BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
-                if (element.Contains("["))
-                {
-                    var elementName = element.Substring(0, element.IndexOf("["));
-                    var index = int.Parse(element.Substring(element.IndexOf("[")).Replace("[", "").Replace("]", ""));
-                    var field = targetObject.GetType().GetField(elementName, bindingFlags);
-                    var list = field.GetValue(targetObject) as IList;
-                    targetObject = list[index];
-                }
-                else
-                {
-                    var field = targetObject.GetType().GetField(element, bindingFlags);
-                    targetObject = field.GetValue(targetObject);
-                }
-            }
-
-            return targetObject;
+            if (property?.serializedObject?.targetObject != null)
+                return property.serializedObject.targetObject;
+            return null;
         }
 
         /// <summary>
@@ -429,7 +416,7 @@ namespace UnityEssentials
 
         public static void DrawStaticFields(Type type)
         {
-            if(type == null)
+            if (type == null)
                 return;
 
             var bindingFlags = BindingFlags.Static | BindingFlags.Public;

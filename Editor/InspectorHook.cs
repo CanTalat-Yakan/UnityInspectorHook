@@ -73,17 +73,21 @@ namespace UnityEssentials
 
         public static Object Target { get; private set; }
         public static Object[] Targets { get; private set; }
+        public static Object Script { get; private set; }
+        public static Object[] Scripts { get; private set; }
         public static SerializedObject SerializedObject { get; private set; }
         public static bool Initialized { get; private set; } = false;
 
         [InitializeOnLoadMethod]
         public static void RegisterInspectorHookStateReset() =>
-            Selection.selectionChanged += () => ResetState();
+            Selection.selectionChanged += ResetState;
 
         public static void ResetState()
         {
             Target = null;
             Targets = null;
+            Script = null;
+            Scripts = null;
             SerializedObject = null;
             Initialized = false;
 
@@ -193,10 +197,12 @@ namespace UnityEssentials
 
         public static void InvokeInitialization(Editor editor)
         {
-            Initialized = true;
-            SerializedObject = editor.serializedObject;
-            Targets = editor.targets;
             Target = editor.target;
+            Targets = editor.targets;
+            Script = editor.serializedObject.targetObject;
+            Scripts = editor.serializedObject.targetObjects;
+            SerializedObject = editor.serializedObject;
+            Initialized = true;
 
             foreach (var entry in s_onInitialization)
                 entry.Hook();
@@ -218,6 +224,8 @@ namespace UnityEssentials
 
         public static void InvokePostProcess()
         {
+            //foreach (var script in Scripts)
+            //Debug.Log($"Post-processing MonoBehaviour: {script.GetType().Name}");
             foreach (var entry in s_onPostProcess)
                 entry.Hook();
         }
@@ -247,19 +255,15 @@ namespace UnityEssentials
         /// </summary>
         /// <param name="methodInfos">When this method returns, contains a list of <see cref="MethodInfo"/> objects representing the retrieved
         /// methods. The list is initialized within the method and populated with the results.</param>
-        public static void GetAllMethods(out List<MethodInfo> methodInfos) =>
-            GetAllMethods(true, out methodInfos);
-
-        public static void GetAllMethods(bool recursively, out List<MethodInfo> methodInfos)
+        public static void GetAllMethods(Type type, out List<MethodInfo> methodInfos)
         {
             methodInfos = new();
+            InspectorHookUtilities.IterateMethods(type, methodInfos.Add);
+        }
 
-            if (Target != null)
-                InspectorHookUtilities.IterateMethods(Target.GetType(), methodInfos.Add);
-
-            if (!recursively)
-                return;
-
+        public static void GetAllMethodsRecursively(Type type, out List<MethodInfo> methodInfos)
+        {
+            GetAllMethods(type, out methodInfos);
             GetAllProperties(out var properties);
             foreach (var property in properties)
             {
