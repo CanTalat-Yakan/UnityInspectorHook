@@ -48,11 +48,11 @@ namespace UnityEssentials
 
             InspectorHook.InvokeProcessProperties(property);
 
-            if (InspectorHook.IsPropertyDisabled(property.propertyPath))
-                GUI.enabled = false;
-
             if (InspectorHook.IsPropertyHandled(property.propertyPath))
                 return;
+
+            if (InspectorHook.IsPropertyDisabled(property.propertyPath))
+                GUI.enabled = false;
 
             EditorGUI.indentLevel = property.depth;
 
