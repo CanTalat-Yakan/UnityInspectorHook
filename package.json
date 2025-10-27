@@ -6,7 +6,7 @@
   "unity": "2022.1",
   "unityRelease": "",
   "dependencies": {
-    "com.unityessentials.core": "1.0.0"
+    "com.unityessentials.core": "https://github.com/CanTalat-Yakan/UnityEssentials"
   },
   "keywords": [],
   "author": {

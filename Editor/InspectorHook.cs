@@ -73,8 +73,6 @@ namespace UnityEssentials
 
         public static Object Target { get; private set; }
         public static Object[] Targets { get; private set; }
-        public static Object Script { get; private set; }
-        public static Object[] Scripts { get; private set; }
         public static SerializedObject SerializedObject { get; private set; }
         public static bool Initialized { get; private set; } = false;
 
@@ -86,8 +84,6 @@ namespace UnityEssentials
         {
             Target = null;
             Targets = null;
-            Script = null;
-            Scripts = null;
             SerializedObject = null;
             Initialized = false;
 
@@ -199,8 +195,6 @@ namespace UnityEssentials
         {
             Target = editor.target;
             Targets = editor.targets;
-            Script = editor.serializedObject.targetObject;
-            Scripts = editor.serializedObject.targetObjects;
             SerializedObject = editor.serializedObject;
             Initialized = true;
 
@@ -248,6 +242,13 @@ namespace UnityEssentials
         {
             serializedProperties = new();
             InspectorHookUtilities.IterateProperties(serializedProperties.Add);
+        }
+
+        public static void GetAllPropertiesRecursively(out List<SerializedProperty> serializedProperties)
+        {
+            GetAllProperties(out serializedProperties);
+            foreach (var property in serializedProperties.ToArray())
+                InspectorHookUtilities.IterateProperties(serializedProperties.Add);
         }
 
         /// <summary>
