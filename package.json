@@ -1,9 +1,9 @@
 {
   "name": "com.unityessentials.inspectorhook",
   "version": "1.0.0",
-  "displayName": "UnityEssentials InspectorHook",
+  "displayName": "Unity Editor Hooks Inspector",
   "description": "This is a part of the UnityEssentials Ecosystem",
-  "unity": "2022.1",
+  "unity": "6000.0",
   "unityRelease": "",
   "dependencies": {},
   "keywords": [],
